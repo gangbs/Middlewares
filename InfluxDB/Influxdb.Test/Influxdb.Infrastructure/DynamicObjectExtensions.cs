@@ -4,17 +4,17 @@ using System.Dynamic;
 using System.Linq;
 using System.Text;
 
-namespace Influxdb.Test.Console
+namespace Influxdb.Infrastructure
 {
-   public static class DynamicObjectExtensions
+    public static class DynamicObjectExtensions
     {
-        public static Dictionary<string,object> ToDictionary(this ExpandoObject dyn)
+        public static Dictionary<string, object> ToDictionary(this ExpandoObject dyn)
         {
-          var dic=  dyn.ToDictionary(x => x.Key, x => x.Value);
+            var dic = dyn.ToDictionary(x => x.Key, x => x.Value);
             return dic;
         }
 
-        public static T ToObject<T>(this ExpandoObject dyn) where T:class
+        public static T ToObject<T>(this ExpandoObject dyn) where T : class
         {
             var json = Newtonsoft.Json.JsonConvert.SerializeObject(dyn);
             var obj = Newtonsoft.Json.JsonConvert.DeserializeObject<T>(json);

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Influxdb.Test.Console
+namespace Influxdb.Infrastructure
 {
     public class IfxSeriesItem<T> where T : class
     {

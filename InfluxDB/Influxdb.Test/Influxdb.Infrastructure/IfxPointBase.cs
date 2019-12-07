@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Influxdb.Test.Console
+namespace Influxdb.Infrastructure
 {
     public abstract class IfxPointBase
     {

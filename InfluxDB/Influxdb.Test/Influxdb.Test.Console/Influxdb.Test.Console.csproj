@@ -6,7 +6,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\InfluxDB.Client.Net-master\src\AdysTech.InfluxDB.Client.Net.Core\AdysTech.InfluxDB.Client.Net.Core.csproj" />
+    <PackageReference Include="AdysTech.InfluxDB.Client.Net.Core" Version="0.9.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Influxdb.Infrastructure\Influxdb.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

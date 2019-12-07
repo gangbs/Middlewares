@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Dynamic;
 using System.Linq;
 using System.Threading.Tasks;
+using Influxdb.Infrastructure;
 
 namespace Influxdb.Test.Console
 {
