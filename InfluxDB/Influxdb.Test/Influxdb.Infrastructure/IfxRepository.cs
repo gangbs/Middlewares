@@ -41,9 +41,19 @@ namespace Influxdb.Infrastructure
 
         public async Task<bool> BatchInsertDataAsync<T>(string dbName, List<T> datas) where T : IfxPointBase
         {
+            int batchSize = 5000;
             var points = datas.ConvertAll<IInfluxDatapoint>(data => data.ToPoint());
-            var r = await _client.PostPointsAsync(dbName, points);
-            return r;
+            int batchNum = (int)Math.Ceiling((double)points.Count / batchSize);
+
+            bool flag = true;
+            for(int i=1;i<=batchNum;i++)
+            {
+                var lst = points.Skip((i - 1) * batchSize).Take(batchSize);
+                var r = await _client.PostPointsAsync(dbName, lst);
+                flag = flag && r;
+            }
+            
+            return flag;
         }
 
         public async Task<List<IfxSeriesItem<T>>> QuerySeriesAsync<T>(string dbName, string sql) where T : class

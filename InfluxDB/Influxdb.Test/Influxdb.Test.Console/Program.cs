@@ -15,102 +15,73 @@ namespace Influxdb.Test.Console
         {
             var url = "http://192.168.10.173:8086";
             var dbName = "mydb1";
-            var client = GetClient(url);
-            //var data = new StableRateModel { time = DateTime.Now.AddHours(-1), tagId = 1, status = 0, rate = 99, score = 100 };
-            //var r = InsertDataAsync(client, dbName, data).Result;
+            IIfxRepository rep = new IfxRepository(url);
 
-            //var sw = new Stopwatch();
-            //var datas = GenDatas(10);
-            //sw.Start();
-            //var r = BatchInsertDataAsync(client, dbName, datas).Result;
-            //sw.Stop();
-            //long t = sw.ElapsedMilliseconds;
-            //System.Console.WriteLine($"批量插入耗时：{t}毫秒");
+            BathInsertTest(rep,dbName);
 
-            //string sql = "select max(rate) from rate_test group by tagId";
-
-            //string sql = "select * from rate_test group by tagId";
-            string sql = "select * from rate_min where time>='2018-10-01T00:00:00Z' and time<'2018-10-02T00:00:00Z' group by tagId";
-            var r = QueryAsync(client, dbName,sql);
 
 
             System.Console.ReadKey();
         }
 
-
-        static InfluxDBClient GetClient(string url)
+        static void QueryAllDbName(IIfxRepository rep)
         {
-            InfluxDBClient client = new InfluxDBClient(url);
-            return client;
+           var lst= rep.AllDbNamesAsync().Result;
         }
 
-        static async Task<bool> InsertDataAsync(InfluxDBClient client, string dbName,StableRateModel data)
+        static void QuerySingleSeries(IIfxRepository rep,string dbName)
         {
-            var point = data.ToPoint();
-            var r = await client.PostPointAsync(dbName, point);
-            return r;
+            string sql = "select * from rate_test";
+
+            var res = rep.QuerySingleSeriesAsync<StableRateModel>(dbName, sql).Result;
         }
 
-        static async Task<bool> BatchInsertDataAsync(InfluxDBClient client, string dbName, List<StableRateModel> datas)
+        static void QueryMuiltySeries(IIfxRepository rep, string dbName)
         {
-            var points = datas.ConvertAll<InfluxDatapoint<double>>(data => data.ToPoint());
-            var r= await client.PostPointsAsync(dbName, points);
-            return r;
+            string sql2 = "select mean(rate) as rate,mean(score) as score from rate_min where time >='2019-10-01 00:00:00' and time<'2019-10-02 00:00:00' group by time(1h),tagId";
+
+            var res2 = rep.QuerySeriesAsync<StableRateModel>(dbName, sql2).Result;
         }
 
-        static List<StableRateModel> GenDatas(int size)
+
+        static void BathInsertTest(IIfxRepository rep, string dbName)
         {
-            var dt = DateTime.Now.AddDays(-1);
-            var r = new Random();
-            var lst = new List<StableRateModel>();
-            for(int i=0;i<size;i++)
+            var datas = new List<StableRateModel>();
+            DateTime dt = new DateTime(2019, 1, 1);
+            Random r = new Random();
+            for (int i = 0; i < 100050; i++)
             {
-                var data = new StableRateModel { time=dt, tagId=r.Next(1,10), status=r.Next(0,1), rate=r.Next(0,100),score=r.Next(10,80)};
-                lst.Add(data);
-                //dt = dt.AddMinutes(-1);
+                datas.Add(new StableRateModel { Time = dt, status = r.Next(10), rate = i+1, score = i+1, tagId = i+1 });
+               dt= dt.AddMinutes(1);
             }
-            return lst;
-        }
+                
+
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+
+           var result=  rep.BatchInsertDataAsync<StableRateModel>(dbName, datas).Result;
+            sw.Stop();
+
+            System.Console.WriteLine($"插入100000数据，耗时：{sw.ElapsedMilliseconds}毫秒");
 
 
-        static async Task<List<StableRateModel>> QueryAsync(InfluxDBClient client,string dbName,string sql)
-        {
-            var r = await client.QueryMultiSeriesAsync(dbName, sql);       
-            var lstEntry = r.FirstOrDefault()?.Entries.ToList().ConvertAll<ExpandoObject>(x => (ExpandoObject)x);
-            var lst = lstEntry.ToObject<StableRateModel>();
-            return lst; 
-        }
-
-
-        public static List<StableRateModel> GetFromDynArry(List<dynamic> lstDyn)
-        {
-            ExpandoObject eo0 = new ExpandoObject();
-
-            eo0.TryAdd("name", "yyg");
-
-            var dic = eo0.ToDictionary(x => x.Key, x => x.Value);
-            
-            var json = Newtonsoft.Json.JsonConvert.SerializeObject(lstDyn);
-            var obj = Newtonsoft.Json.JsonConvert.DeserializeObject<List<StableRateModel>>(json);
-            return obj;
         }
 
     }
 
 
-    public class StableRateModel
+    public class StableRateModel: IfxPointBase
     {
-        public const string tbName = "rate_test";
-        public DateTime time { get; set; }
+        public const string tbName = "rate_test2";
         public double rate { get; set; }
         public double score { get; set; }
         public int status { get; set; }
         public int tagId { get; set; }
 
-        public InfluxDatapoint<double> ToPoint()
+        public override IInfluxDatapoint ToPoint()
         {
             var point = new InfluxDatapoint<double>();
-            point.UtcTimestamp = this.time;
+            point.UtcTimestamp = this.Time;
             point.Tags.Add(nameof(StableRateModel.tagId), this.tagId.ToString());
             point.Tags.Add(nameof(StableRateModel.status), this.status.ToString());
             //point.Fields.Add(nameof(StableRateModel.rate), new InfluxValueField(85.23));
@@ -122,8 +93,6 @@ namespace Influxdb.Test.Console
             point.Retention = new InfluxRetentionPolicy();
             return point;
         }
-
     }
-
     
 }
